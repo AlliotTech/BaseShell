@@ -1,125 +1,94 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1091,SC2155
-source ./../../BaseShell/Utils/BaseTestHeader.sh
-#################引入需要测试的脚本################
+# shellcheck disable=SC1091
+#===============================================================
+source ./../../BaseShell/Starter/BaseHeader.sh
+#===============================================================
 source ./../../BaseShell/Lang/BaseObject.sh
-###################下面写单元测试#################
+#===============================================================
 test-equals(){
-  local result=$(equals "1" "1" && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(equals "1" "2" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(equals "1" "" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(equals "" "" && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(equals " " "" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(equals "1 " "1" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(equals "1 " "1 " && echo 0 || echo 1)
-  assertTrue "${result}"
+  equals "1" "1"
+  assertTrue $?
+
+  equals "1" "1 "
+  assertFalse $?
+
+  equals "a" "a"
+  assertTrue $?
+
+  equals "11" ""
+  assertFalse $?
+
+  equals "" ""
+  assertTrue $?
+
+  equals "" "0"
+  assertFalse $?
 }
-test-delay(){
-  local begin=$(localdatetime_now_timestamp)
-  delay 1
-  local end=$(localdatetime_now_timestamp)
-  assertEquals "${end}" "$((begin+1))"
 
-  local begin=$(localdatetime_now_timestamp)
-  echo 1|delay
-  local end=$(localdatetime_now_timestamp)
-  assertEquals "${end}" "$((begin+1))"
+test-is(){
+  isBlank ""
+  assertTrue $?
+  isBlank " "
+  assertTrue  $?
+  isBlank "1"
+  assertFalse $?
+  isBlank  1
+  assertFalse $?
+
+  isEmpty ""
+  assertTrue $?
+  isEmpty " "
+  assertFalse $?
+  isEmpty "1"
+  assertFalse $?
+  isEmpty  1
+  assertFalse $?
+
+  isNotBlank ""
+  assertFalse $?
+  isNotBlank " "
+  assertFalse $?
+  isNotBlank "1"
+  assertTrue $?
+  isNotBlank  1
+  assertTrue $?
+
+  isNatural "1"
+  assertTrue $?
+  isNatural "2.1"
+  assertFalse $?
 }
-test-isEmpty(){
-  local result=$(isEmpty "1" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(echo "1"|isEmpty && echo 0 || echo 1)
-  assertFalse "${result}"
 
-  local result=$(isEmpty " " && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(echo " "|isEmpty && echo 0 || echo 1)
-  assertFalse "${result}"
-
-  local result=$(isEmpty "" && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(echo ""|isEmpty && echo 0 || echo 1)
-  assertTrue "${result}"
-
-  local result=$(isEmpty 1 && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$( echo "1"|isEmpty && echo 0 || echo 1)
-  assertFalse "${result}"
-}
-test-isNotEmpty(){
-local result=$(isNotEmpty "1" && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(echo "1"|isNotEmpty && echo 0 || echo 1)
-  assertTrue "${result}"
-
-  local result=$(isNotEmpty " " && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(echo " "|isNotEmpty && echo 0 || echo 1)
-  assertTrue "${result}"
-
-  local result=$(isNotEmpty "" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(echo ""|isNotEmpty && echo 0 || echo 1)
-  assertFalse "${result}"
-
-  local result=$(isNotEmpty 1 && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$( echo "1"|isNotEmpty && echo 0 || echo 1)
-  assertTrue "${result}"
-}
-test-isBlank(){
-  local result=$(isBlank "1" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(echo "1"|isBlank && echo 0 || echo 1)
-  assertFalse "${result}"
-
-  local result=$(isBlank " " && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(echo " "|isBlank && echo 0 || echo 1)
-  assertTrue "${result}"
-
-  local result=$(isBlank "" && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(echo ""|isBlank && echo 0 || echo 1)
-  assertTrue "${result}"
-
-  local result=$(isBlank "1" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(echo "1"|isBlank && echo 0 || echo 1)
-  assertFalse "${result}"
-}
-test-isNotBlank(){
-  local result=$(isNotBlank "1" && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(echo "1"|isNotBlank && echo 0 || echo 1)
-  assertTrue "${result}"
-
-  local result=$(isNotBlank " " && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(echo " "|isNotBlank && echo 0 || echo 1)
-  assertFalse "${result}"
-
-  local result=$(isNotBlank "" && echo 0 || echo 1)
-  assertFalse "${result}"
-  local result=$(echo ""|isNotBlank && echo 0 || echo 1)
-  assertFalse "${result}"
-
-  local result=$(isNotBlank "1" && echo 0 || echo 1)
-  assertTrue "${result}"
-  local result=$(echo "1"|isNotBlank && echo 0 || echo 1)
-  assertTrue "${result}"
-}
 test-hashCode(){
-  local result=$(hashCode "A")
-  assertEquals "${result}" "65"
-  local result=$(echo "A"|hashCode)
-  assertEquals "${result}" "65"
+  local hashCode=$(hashCode "A")
+  assertEquals "${hashCode}" "65"
+
+  local hashCode=$(echo "A"|hashCode)
+  assertEquals "${hashCode}" "65"
 }
-###################上面写单元测试#################
-source ../Utils/BaseTestEnd.sh
+
+test-new_fd(){
+  fd=$(new_fd)
+  assertEquals "${fd}" "4"
+
+  exec 4<>file && rm file
+  fd=$(new_fd)
+  assertEquals "${fd}" "5"
+
+  exec 4>&-
+  fd=$(new_fd)
+  assertEquals "${fd}" "4"
+}
+
+test-new_function(){
+  function func(){
+    # 返回当前函数的名称
+    echo ${FUNCNAME[0]}
+  }
+
+  new_function func func_new
+  local name=$(func_new)
+  assertEquals "${name}" "func_new"
+}
+#===============================================================
+source ./../../BaseShell/Starter/BaseTestEnd.sh

@@ -1,49 +1,40 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1091,SC2155
-source ./../../BaseShell/Utils/BaseHeader.sh
-source ./../../BaseShell/Utils/BaseUuid.sh
 #===============================================================
-
-function new_lock(){
-  enum_available_fd #在同一进程中,使用 4..250 之间的文件描述符关联有名管道, #下次new_threadPool,文件描述符+1
-  local FD=$?
-  local lockName="$(uuid_randomUUID)" #用当前的时间(秒)_当前进程ID最为有名管道名称,代表一个线程池
-  [[ -e "${lockName}" ]] || mkfifo "${lockName}" #如果有名管道不存在,则创建一个有名管道当做线程池,利用有名管道作为阻塞队列来调度任务的执行
-  eval "exec ${FD}<>${lockName} && rm -rf ${lockName}"
-  for ((i=0;i<1;i++));do echo "${i}" >& "${FD}";done
-  return "${FD}"
+source ./../../BaseShell/Starter/BaseImported.sh && return
+source ./../../BaseShell/Starter/BaseStarter.sh
+#===============================================================================
+# 该锁利用fifo的阻塞原理实现 非重入锁
+# 新建一个锁 []<-(lock_fd:String)
+function new_lock(){ _NotBlank "$1" "lock fd can not be null"
+  local fd=$1
+  new_fifo "${fd}"
+  echo 0 >& "${fd}"
 }
 
-function lock_action(){
-  local lock=$1 ; local action=$2
-  private_lock_tryLock "${lock}"
-  {
-    eval "${action}"
+# 尝试加锁,也就是获取fifo的执行令牌,并发情况下只有一个线程可以获取到
+# 非重入锁,切勿连续两次上锁,否则有可能死锁
+# 尝试加锁 []<-(lock_fd:String)
+function lock_tryLock(){ _NotBlank "$1" "lock fd can not be null"
+  local fd=$1
+  ! isExist "${fd}" && {
+    new_lock "${fd}"
   }
-  private_lock_releaseLock "${lock}"
+  read -r -u "${fd}"
 }
 
-function new_flock() {
-  local lock="$(uuid_randomUUID)" #用当前的时间(秒)_当前进程ID最为有名管道名称,代表一个线程池
-  echo "${lock}"
+# 解锁,也就是归还fifo的执行令牌,并发情况下只有一个线程可以获取到
+# 非重入锁,切勿连续两次解锁,否则有可能死锁
+# 解锁 []<-(lock_fd:String)
+function lock_unLock(){ _NotBlank "$1" "lock fd can not be null"
+  local fd=$1
+  echo 0 >& "${fd}"
 }
 
-function flock_action(){
-  local lock=$1 ; local action=$2
-  {
-    flock -n 1024 || log_fail "lock error"
-    ${action}
-    rm -rf "/tmp/${lock}"
-  } 1024<> "/tmp/${lock}"
-}
-
-private_lock_tryLock(){
-  local lock=$1
-  #能获取到锁,则可以入队,获取不到锁说明队列已满,并没有消费,阻塞在入队上
-  read -r -u "${lock}"
-}
-
-private_lock_releaseLock(){
-  local lockPool=$1
-  echo  1 >& "${lockPool}"
+# 获取锁后执行 []<-(lock_fd:String)
+function lock_run(){ _NotBlank "$1" "lock fd can not be null" && _NotBlank "$2" "function can not be null"
+  local fd=$1;shift ; local task=$*
+  lock_tryLock "${fd}"
+  eval "${task}"
+  lock_unLock "${fd}"
 }

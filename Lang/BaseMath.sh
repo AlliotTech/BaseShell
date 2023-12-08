@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1091,SC2155
 #===============================================================
-if [[ "${BASE_MATH_IMPORTED}" == 0 ]]; then
-  return
-fi
-readonly BASE_MATH_IMPORTED=0
+source ./../../BaseShell/Starter/BaseImported.sh && return
+source ./../../BaseShell/Starter/BaseStarter.sh
 #===============================================================
-source ./../../BaseShell/Utils/BaseHeader.sh
-source ./../../BaseShell/Lang/BaseString.sh
 # D开头的数字代表十进制、B代表二进制、H代表十六进制、O代表八进制
 # 绝对值 [Int]<-(param:Number)
 function math_abs(){

@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1091,SC2155
-source ./../../BaseShell/Utils/BaseTestHeader.sh
-#################引入需要测试的脚本################
+#===============================================================
+source ./../../BaseShell/Starter/BaseHeader.sh
+#===============================================================
 source ./../../BaseShell/Log/BaseLog.sh
-###################下面写单元测试#################
+#===============================================================
 test-log(){
-  log_debug   "1"
-  log_info    "1"
-  log_error   "1"
-  log_trace   "1"
-  log_warn    "1"
-  log_success "1"
-  log_info "    1\n2 "
-  echo -e "1\n2"|trim #
-  log_fail    "1"
+  log_info     "$(echo "{\"one\":1}"|jq .)"
+  log_debug    "$(echo "{\"one\":1}"|jq .)"
+  log_error    "$(echo "{\"one\":1}"|jq .)"
+  log_success  "$(echo "{\"one\":1}"|jq .)"
+  log_warn     "$(echo "{\"one\":1}"|jq .)"
+  log_trace    "$(echo "{\"one\":1}"|jq .)"
+  log_info     "$(echo "{\"one\":1}"|jq .)"
+  test-lineNo
+  log_fail     "$(echo "{\"one\":1}"|jq .)"
+  log_info     "$(echo "{\"one\":1}"|jq .)"
 }
 
-#===============================================================================
-source ./../../BaseShell/Utils/BaseTestEnd.sh
-    
+test-lineNo(){ #ignore
+  log_info   "$(echo "{\"one\":222}"|jq .)"  
+}
+#===============================================================
+source ./../../BaseShell/Starter/BaseTestEnd.sh
